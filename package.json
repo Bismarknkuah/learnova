@@ -1,0 +1,24 @@
+{
+  "name": "learnova",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Learnova — AI-powered educational super-platform for West Africa (enterprise monorepo).",
+  "workspaces": [
+    "backend",
+    "frontend",
+    "mobile",
+    "shared"
+  ],
+  "scripts": {
+    "dev:api": "npm --workspace @learnova/backend run dev",
+    "dev:web": "npm --workspace @learnova/frontend run dev",
+    "dev:mobile": "npm --workspace @learnova/mobile run start",
+    "build": "npm --workspace @learnova/shared run build && npm --workspace @learnova/backend run build && npm --workspace @learnova/frontend run build",
+    "typecheck": "npm --workspace @learnova/backend run typecheck",
+    "demo": "npm --workspace @learnova/backend run demo",
+    "seed": "npm --workspace @learnova/backend run seed"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
