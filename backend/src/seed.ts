@@ -4,6 +4,7 @@
  */
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 import { connectMongo, disconnectMongo } from './core/db.js';
 import { logger } from './core/logger.js';
 import { TenantModel } from './modules/tenants/tenant.model.js';
@@ -52,20 +53,56 @@ export async function seedDatabase() {
   await UserModel.updateOne({ _id: ama._id }, { guardianId: parent._id });
 
   // ---- Tutor profiles ----
-  const tutor = async (userId: unknown, data: Record<string, unknown>) =>
-    TutorModel.findOneAndUpdate({ userId }, { tenantId, userId, isPublished: true, ...data }, { upsert: true, new: true });
-  await tutor(mensah._id, {
-    headline: 'WASSCE Physics & Maths, made simple', bio: 'Award-winning teacher, 12 years experience.',
-    subjects: ['Physics', 'Mathematics'], levels: ['WASSCE', 'SHS'], languages: ['English', 'Twi'],
-    hourlyRateGHS: 100, rating: 4.8, reviewsCount: 64, completedSessions: 320, ghanaCardVerified: true, aiTwinEnabled: true,
-    gender: 'male', teachingStyle: 'exam-focused', country: 'Ghana', availability: ['weekday-evenings', 'weekends'],
-  });
-  await tutor(ofori._id, {
-    headline: 'English & Literature for WASSCE', bio: 'Helping students master comprehension and essays.',
-    subjects: ['English', 'Literature'], levels: ['WASSCE', 'JHS'], languages: ['English'],
-    hourlyRateGHS: 80, rating: 4.6, reviewsCount: 41, completedSessions: 210, ghanaCardVerified: true, aiTwinEnabled: true,
-    gender: 'female', teachingStyle: 'conversational', country: 'Ghana', availability: ['weekends'],
-  });
+const tutor = (userId: unknown, data: Record<string, unknown>) =>
+  TutorModel.findOneAndUpdate(
+    { userId },
+    {
+      tenantId,
+      userId,
+      isPublished: true,
+      ...data,
+    },
+    {
+      upsert: true,
+      new: true,
+    },
+  );
+
+const mensahTutor = await tutor(mensah._id, {
+  headline: 'WASSCE Physics & Maths, made simple',
+  bio: 'Award-winning teacher, 12 years experience.',
+  subjects: ['Physics', 'Mathematics'],
+  levels: ['WASSCE', 'SHS'],
+  languages: ['English', 'Twi'],
+  hourlyRateGHS: 100,
+  rating: 4.8,
+  reviewsCount: 64,
+  completedSessions: 320,
+  ghanaCardVerified: true,
+  aiTwinEnabled: true,
+  gender: 'male',
+  teachingStyle: 'exam-focused',
+  country: 'Ghana',
+  availability: ['weekday-evenings', 'weekends'],
+});
+
+const oforiTutor = await tutor(ofori._id, {
+  headline: 'English & Literature for WASSCE',
+  bio: 'Helping students master comprehension and essays.',
+  subjects: ['English', 'Literature'],
+  levels: ['WASSCE', 'JHS'],
+  languages: ['English'],
+  hourlyRateGHS: 80,
+  rating: 4.6,
+  reviewsCount: 41,
+  completedSessions: 210,
+  ghanaCardVerified: true,
+  aiTwinEnabled: true,
+  gender: 'female',
+  teachingStyle: 'conversational',
+  country: 'Ghana',
+  availability: ['weekends'],
+});
 
   // ---- Marketplace products ----
   const product = (sellerId: unknown, d: Record<string, unknown>) =>
@@ -194,13 +231,28 @@ export async function seedDatabase() {
 
 
   // ---- A demo class so the classroom list is populated ----
-  if (await SessionModel.countDocuments({ tenantId }) === 0) {
-    await SessionModel.create([
-      { tenantId, title: 'Physics: Newton\'s Laws (Live Revision)', hostId: mensah._id, status: 'scheduled' },
-      { tenantId, title: 'Maths Clinic: Quadratics', hostId: ofori._id, status: 'scheduled' },
-    ]);
-  }
-
+if (await SessionModel.countDocuments({ tenantId }) === 0) {
+  await SessionModel.create([
+    {
+      tenantId,
+      tutorId: mensahTutor._id,
+      title: 'Physics: Newton\'s Laws (Live Revision)',
+      hostName: 'Prof. Mensah',
+      subject: 'Physics',
+      level: 'SHS',
+      status: 'scheduled',
+    },
+    {
+      tenantId,
+      tutorId: oforiTutor._id,
+      title: 'Maths Clinic: Quadratics',
+      hostName: 'Madam Ofori',
+      subject: 'Mathematics',
+      level: 'SHS',
+      status: 'scheduled',
+    },
+  ]);
+}
 
   // ---- Gamification (so the leaderboard ranks students) ----
   const gami = (userId: unknown, xp: number) =>
