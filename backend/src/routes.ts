@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { settingsRoutes } from './modules/settings/settings.routes.js';
 import { SessionModel } from './modules/classrooms/session.model.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { tutorRoutes } from './modules/tutors/tutor.routes.js';
@@ -44,6 +45,7 @@ publicRouter.get('/classes', async (_req, res) => {
   } catch { res.json({ data: [] }); }
 });
 apiRouter.use('/public', publicRouter);
+apiRouter.use('/settings', settingsRoutes);
 
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/tutors', tutorRoutes);

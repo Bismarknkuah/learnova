@@ -2,14 +2,15 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useMe } from '@/features/profile/useMe';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import { useAuth } from '@/stores/auth';
+import { useMe } from '@/features/profile/useMe';
 import {
   Home, Search, CalendarDays, Sparkles, Bot, Languages, TrendingUp, ClipboardCheck, GraduationCap,
   FlaskConical, FileEdit, Compass, MessagesSquare, Briefcase, BadgeCheck, ShoppingBag, BookOpen, Award,
   Trophy, Users2, Newspaper, FlaskRound, Wallet, LayoutDashboard, Building2, Baby, ShieldCheck,
-  Menu, X, LogOut, MessageSquare, CreditCard, Settings, Video, UserCircle, Brain, ClipboardList, Megaphone, type LucideIcon,
-} from 'lucide-react';
+  Menu, X, LogOut, MessageSquare, CreditCard, Settings, Video, UserCircle, Brain, ClipboardList, Megaphone, SlidersHorizontal, type LucideIcon } from 'lucide-react';
 
 type Item = { href: string; label: string; icon: LucideIcon };
 type Group = { title: string; items: Item[] };
@@ -84,8 +85,22 @@ export function Sidebar() {
     { href: '/profile', label: 'My Profile', icon: UserCircle },
     { href: '/billing', label: 'Plans & Billing', icon: CreditCard },
     { href: '/settings', label: 'Settings', icon: Settings },
+    ...(me?.role === 'super_admin' ? [{ href: '/system-settings', label: 'System Settings', icon: SlidersHorizontal }] : []),
   ] };
-  const groups: Group[] = [{ title: 'Overview', items: [{ href: '/home', label: 'Home', icon: Home }, { href: '/messages', label: 'Messages', icon: MessageSquare }] }, ...(me?.role ? BY_ROLE[me.role] ?? [] : []), COMMON, account];
+  // Admin-controlled feature visibility for this user's role.
+  const token = useAuth((s) => s.accessToken) ?? undefined;
+  const { data: featureCfg } = useQuery({
+    queryKey: ['my-features'],
+    queryFn: () => api.get<{ mine: string[] }>('/settings/features', token),
+    enabled: !!token, staleTime: 60000,
+  });
+  const hidden = new Set(featureCfg?.mine ?? []);
+  const rawGroups: Group[] = [{ title: 'Overview', items: [{ href: '/home', label: 'Home', icon: Home }, { href: '/messages', label: 'Messages', icon: MessageSquare }] }, ...(me?.role ? BY_ROLE[me.role] ?? [] : []), COMMON, account];
+  // Drop any feature the admin disabled for this role (Home/Profile/Settings always kept).
+  const KEEP = new Set(['/home', '/profile', '/settings', '/system-settings']);
+  const groups: Group[] = rawGroups
+    .map((g) => ({ ...g, items: g.items.filter((it) => KEEP.has(it.href) || !hidden.has(it.href)) }))
+    .filter((g) => g.items.length > 0);
 
   const NavInner = (
     <div className="flex h-full flex-col">
